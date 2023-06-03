@@ -14,6 +14,11 @@ typedef uint16_t u16;
 typedef uint32_t u32;
 typedef int16_t i16;
 typedef int32_t i32;
+/* macros */
+#define EXT2_SUPER_MAGIC 0xEF53
+#define INODE_SIZE 128
+/* macros */
+
 
 #define BLOCK_SIZE 1024
 #define BLOCK_OFFSET(i) (i * BLOCK_SIZE)
@@ -196,27 +201,27 @@ void write_superblock(int fd) {
 
 	/* These are intentionally incorrectly set as 0, you should set them
 	   correctly and delete this comment */
-	superblock.s_inodes_count      = 0;
-	superblock.s_blocks_count      = 0;
+	superblock.s_inodes_count      = NUM_INODES;
+	superblock.s_blocks_count      = NUM_BLOCKS;
 	superblock.s_r_blocks_count    = 0;
-	superblock.s_free_blocks_count = 0;
-	superblock.s_free_inodes_count = 0;
-	superblock.s_first_data_block  = 0; /* First Data Block */
+	superblock.s_free_blocks_count = NUM_FREE_BLOCKS;
+	superblock.s_free_inodes_count = NUM_FREE_INODES;
+	superblock.s_first_data_block  = SUPERBLOCK_BLOCKNO; /* First Data Block */
 	superblock.s_log_block_size    = 0; /* 1024 */
 	superblock.s_log_frag_size     = 0; /* 1024 */
-	superblock.s_blocks_per_group  = 0;
-	superblock.s_frags_per_group   = 0;
-	superblock.s_inodes_per_group  = 0;
+	superblock.s_blocks_per_group  = BLOCK_SIZE*8;
+	superblock.s_frags_per_group   = BLOCK_SIZE*8;
+	superblock.s_inodes_per_group  = NUM_INODES;
 	superblock.s_mtime             = 0; /* Mount time */
-	superblock.s_wtime             = 0; /* Write time */
+	superblock.s_wtime             = current_time; /* Write time */
 	superblock.s_mnt_count         = 0; /* Number of times mounted so far */
-	superblock.s_max_mnt_count     = 0; /* Make this unlimited */
-	superblock.s_magic             = 0; /* ext2 Signature */
-	superblock.s_state             = 0; /* File system is clean */
-	superblock.s_errors            = 0; /* Ignore the error (continue on) */
+	superblock.s_max_mnt_count     = -1; /* Make this unlimited */
+	superblock.s_magic             = EXT2_SUPER_MAGIC; /* ext2 Signature */
+	superblock.s_state             = 1; /* File system is clean */
+	superblock.s_errors            = 1; /* Ignore the error (continue on) */
 	superblock.s_minor_rev_level   = 0; /* Leave this as 0 */
-	superblock.s_lastcheck         = 0; /* Last check time */
-	superblock.s_checkinterval     = 0; /* Force checks by making them every 1 second */
+	superblock.s_lastcheck         = current_time; /* Last check time */
+	superblock.s_checkinterval     = 1; /* Force checks by making them every 1 second */
 	superblock.s_creator_os        = 0; /* Linux */
 	superblock.s_rev_level         = 0; /* Leave this as 0 */
 	superblock.s_def_resuid        = 0; /* root */
@@ -250,6 +255,10 @@ void write_superblock(int fd) {
 }
 
 void write_block_group_descriptor_table(int fd) {
+	off_t off = lseek(fd, BLOCK_OFFSET(1), SEEK_SET);
+	if (off == -1) {
+		errno_exit("lseek");
+	}
 	off_t off = lseek(fd, BLOCK_OFFSET(2), SEEK_SET);
 	if (off == -1) {
 		errno_exit("lseek");
@@ -259,12 +268,12 @@ void write_block_group_descriptor_table(int fd) {
 
 	/* These are intentionally incorrectly set as 0, you should set them
 	   correctly and delete this comment */
-	block_group_descriptor.bg_block_bitmap = 0;
-	block_group_descriptor.bg_inode_bitmap = 0;
-	block_group_descriptor.bg_inode_table = 0;
-	block_group_descriptor.bg_free_blocks_count = 0;
-	block_group_descriptor.bg_free_inodes_count = 0;
-	block_group_descriptor.bg_used_dirs_count = 0;
+	block_group_descriptor.bg_block_bitmap = BLOCK_BITMAP_BLOCKNO;
+	block_group_descriptor.bg_inode_bitmap = INODE_BITMAP_BLOCKNO;
+	block_group_descriptor.bg_inode_table = INODE_TABLE_BLOCKNO;
+	block_group_descriptor.bg_free_blocks_count = NUM_FREE_BLOCKS;
+	block_group_descriptor.bg_free_inodes_count = NUM_FREE_INODES;
+	block_group_descriptor.bg_used_dirs_count = 2;
 
 	ssize_t size = sizeof(block_group_descriptor);
 	if (write(fd, &block_group_descriptor, size) != size) {
@@ -273,7 +282,21 @@ void write_block_group_descriptor_table(int fd) {
 }
 
 void write_block_bitmap(int fd) {
-	/* This is all you */
+	off_t off = lseek(fd, BLOCK_OFFSET(BLOCK_BITMAP_BLOCKNO), SEEK_SET);
+	if (off == -1) {
+		errno_exit("lseek");
+	}
+
+	u8 bitmap[NUM_BLOCKS]=0;
+	for (int x=0;x<BLOCK_SIZE*8;x++){
+		if()
+		bitmap[x]=x;
+	}
+		memcpy(&superblock.s_volume_name, "cs111-base", 10);
+
+	if write(fd, &superblock, size){
+
+	}
 }
 
 void write_inode_bitmap(int fd) {
