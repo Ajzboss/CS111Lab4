@@ -45,3 +45,12 @@ total 7
 
 Explain briefly how to unmount the filesystem, remove the mount directory, and
 clean up all binary files.
+TO unmount the file system:
+```bash
+sudo umount mnt
+rmdir mnt
+```
+Clean up the executables with:
+```bash
+make clean
+```
